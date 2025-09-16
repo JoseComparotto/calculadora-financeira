@@ -1,0 +1,13 @@
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>me.josecomparotto.financialcalc</groupId>
+    <artifactId>calculadora-financeira</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>calculadora-financeira-core</module>
+        <module>calculadora-financeira-cli</module>
+    </modules>
+
+</project>
