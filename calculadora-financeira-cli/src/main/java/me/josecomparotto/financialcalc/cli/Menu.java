@@ -9,6 +9,7 @@ import me.josecomparotto.financialcalc.core.parcelas.Parcela;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
@@ -137,9 +138,10 @@ public class Menu {
         BigDecimal principal = readBigDecimal(sc, "Valor Principal");
         int n = readInt(sc, "Numero de parcelas");
         int prec = readPrecision(sc);
-        var calc = new CalculadoraParcelasSemJuros(MC);
-        List<Parcela> parcelas = calc.calcularParcelas(principal, n, prec);
-        imprimirParcelas(parcelas);
+        MathContext mcResultado = new MathContext(prec, RoundingMode.HALF_UP);
+        var calc = new CalculadoraParcelasSemJuros(MC, mcResultado);
+        List<Parcela> parcelas = calc.calcularParcelas(principal, n);
+        imprimirParcelas(parcelas, mcResultado);
     }
 
     private void menuParcelasSac(Scanner sc) {
@@ -148,9 +150,10 @@ public class Menu {
         BigDecimal taxa = readPercentAsRate(sc, "Taxa em % por periodo (ex.: 10)");
         int n = readInt(sc, "Numero de parcelas");
         int prec = readPrecision(sc);
-        var calc = new CalculadoraParcelasSac(MC);
-        List<Parcela> parcelas = calc.calcularParcelas(principal, taxa, n, prec);
-        imprimirParcelas(parcelas);
+        MathContext mcResultado = new MathContext(prec, RoundingMode.HALF_UP);
+        var calc = new CalculadoraParcelasSac(MC, mcResultado);
+        List<Parcela> parcelas = calc.calcularParcelas(principal, taxa, n);
+        imprimirParcelas(parcelas, mcResultado);
     }
 
     private void menuParcelasPrice(Scanner sc) {
@@ -159,12 +162,13 @@ public class Menu {
         BigDecimal taxa = readPercentAsRate(sc, "Taxa em % por periodo (ex.: 10)");
         int n = readInt(sc, "Numero de parcelas");
         int prec = readPrecision(sc);
-        var calc = new CalculadoraParcelasPrice(MC);
-        List<Parcela> parcelas = calc.calcularParcelas(principal, taxa, n, prec);
-        imprimirParcelas(parcelas);
+        MathContext mcResultado = new MathContext(prec, RoundingMode.HALF_UP);
+        var calc = new CalculadoraParcelasPrice(MC, mcResultado);
+        List<Parcela> parcelas = calc.calcularParcelas(principal, taxa, n);
+        imprimirParcelas(parcelas, mcResultado);
     }
 
-    private void imprimirParcelas(List<Parcela> parcelas) {
+    private void imprimirParcelas(List<Parcela> parcelas, MathContext mcResultado) {
         System.out.println(" # | Parcela  | Amortizacao | Juros   | Saldo");
         BigDecimal totalParcela = BigDecimal.ZERO;
         BigDecimal totalAmort = BigDecimal.ZERO;
@@ -180,11 +184,13 @@ public class Menu {
             totalAmort = totalAmort.add(p.getValorAmortizacao());
             totalJuros = totalJuros.add(p.getValorJuros());
         }
-        int scale = parcelas.isEmpty() ? 2 : parcelas.get(0).getValorParcela().scale();
+        int scale = mcResultado.getPrecision() > 0 ? mcResultado.getPrecision() : 2;
+        RoundingMode rm = mcResultado.getRoundingMode() == null ? RoundingMode.HALF_UP : mcResultado.getRoundingMode();
+        System.out.println("------------------------------------------------");
         System.out.println("Totais:");
-        System.out.println("  Parcelas: " + totalParcela.setScale(scale, java.math.RoundingMode.HALF_UP));
-        System.out.println("  Amortizacao: " + totalAmort.setScale(scale, java.math.RoundingMode.HALF_UP));
-        System.out.println("  Juros: " + totalJuros.setScale(scale, java.math.RoundingMode.HALF_UP));
+        System.out.println("  Parcelas: " + totalParcela.setScale(scale, rm));
+        System.out.println("  Amortizacao: " + totalAmort.setScale(scale, rm));
+        System.out.println("  Juros: " + totalJuros.setScale(scale, rm));
         System.out.println();
     }
 }

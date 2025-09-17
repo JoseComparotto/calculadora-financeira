@@ -8,7 +8,6 @@ public interface ICalculadoraParcelas {
     List<Parcela> calcularParcelas(
             BigDecimal valorPrincipal,
             BigDecimal taxaJuros,
-            Integer numeroParcelas,
-            Integer precisao);
+            Integer numeroParcelas);
 
 }

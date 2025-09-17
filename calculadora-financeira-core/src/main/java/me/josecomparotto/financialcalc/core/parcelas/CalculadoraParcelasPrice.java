@@ -8,19 +8,21 @@ import java.util.List;
 
 public class CalculadoraParcelasPrice implements ICalculadoraParcelas {
 
-    private final MathContext mc;
+        private final MathContext mcCalculo;
+        private final MathContext mcResultado;
 
-    public CalculadoraParcelasPrice(MathContext mc) {
-        this.mc = mc;
-    }
+        public CalculadoraParcelasPrice(MathContext mcCalculo, MathContext mcResultado) {
+                this.mcCalculo = mcCalculo == null ? MathContext.DECIMAL128 : mcCalculo;
+                this.mcResultado = mcResultado == null ? new MathContext(2, RoundingMode.HALF_UP) : mcResultado;
+        }
 
-    public CalculadoraParcelasPrice() {
-        this.mc = MathContext.DECIMAL128;
-    }
+        public CalculadoraParcelasPrice() {
+                this.mcCalculo = MathContext.DECIMAL128;
+                this.mcResultado = new MathContext(2, RoundingMode.HALF_UP);
+        }
 
     @Override
-    public List<Parcela> calcularParcelas(BigDecimal valorPrincipal, BigDecimal taxaJuros, Integer numeroParcelas,
-            Integer precisao) {
+        public List<Parcela> calcularParcelas(BigDecimal valorPrincipal, BigDecimal taxaJuros, Integer numeroParcelas) {
         
         if (valorPrincipal == null) {
             throw new IllegalArgumentException("Valor principal deve ser fornecido");
@@ -31,17 +33,17 @@ public class CalculadoraParcelasPrice implements ICalculadoraParcelas {
         if (numeroParcelas == null || numeroParcelas <= 0) {
             throw new IllegalArgumentException("Número de parcelas deve ser positivo e diferente de zero");
         }
-        if (precisao == null) {
-            throw new IllegalArgumentException("Precisão deve ser fornecida");
-        }
 
         List<Parcela> parcelas = new ArrayList<>();
         BigDecimal saldoDevedor = valorPrincipal;
-        BigDecimal valorParcela = calcularValorPrestacao(valorPrincipal, taxaJuros, numeroParcelas, mc);
+                BigDecimal valorParcela = calcularValorPrestacao(valorPrincipal, taxaJuros, numeroParcelas, mcCalculo);
 
-        BigDecimal valorParcelaArred = valorParcela.setScale(precisao, RoundingMode.HALF_UP);
+                int scale = mcResultado.getPrecision() > 0 ? mcResultado.getPrecision() : 2;
+                RoundingMode rm = mcResultado.getRoundingMode() == null ? RoundingMode.HALF_UP : mcResultado.getRoundingMode();
+
+                BigDecimal valorParcelaArred = valorParcela.setScale(scale, rm);
         BigDecimal taxaJurosAjustada = calcularTaxaJurosAjustada(
-                valorPrincipal, numeroParcelas, valorParcela, valorParcelaArred, taxaJuros, mc);
+                                valorPrincipal, numeroParcelas, valorParcela, valorParcelaArred, taxaJuros, mcCalculo);
 
         for (int i = 1; i <= numeroParcelas; i++) {
             BigDecimal jurosReais, // J_k
@@ -65,12 +67,12 @@ public class CalculadoraParcelasPrice implements ICalculadoraParcelas {
 
             // Arredonda o novo saldo devedor para a precisão desejada
             // SD_k' = round(SD_k, 2)
-            novoSaldoDevedorArred = novoSaldoDevedor.setScale(precisao, RoundingMode.HALF_UP);
+            novoSaldoDevedorArred = novoSaldoDevedor.setScale(scale, rm);
 
             // Calcula a amortização arredondada para garantir que o saldo devedor zere no
             // final.
             // A_k' = round(SD_{k-1}, 2) - SD_k'
-            amortizacaoArred = saldoDevedor.setScale(2, RoundingMode.HALF_UP)
+            amortizacaoArred = saldoDevedor.setScale(scale, rm)
                     .subtract(novoSaldoDevedorArred);
 
             // Calcula os juros arredondados
@@ -172,7 +174,7 @@ public class CalculadoraParcelasPrice implements ICalculadoraParcelas {
             BigDecimal prestacaoCalculada, // P0
             BigDecimal prestacaoDesejada, // P
             BigDecimal taxaJurosInicial, // i0
-            MathContext mc) {
+                        MathContext mc) {
         // dP = P - P0
         BigDecimal diferencaPrestacao = prestacaoDesejada.subtract(prestacaoCalculada);
 

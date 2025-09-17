@@ -18,6 +18,7 @@ import java.nio.file.Path;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Locale;
 
@@ -144,8 +145,9 @@ public class Main implements Runnable {
                 System.err.println("Erro: --output so e suportado com -f csv.");
                 return;
             }
-            var calc = new CalculadoraParcelasSemJuros(MC);
-            List<Parcela> parcelas = calc.calcularParcelas(principal, n, common.precision);
+            MathContext mcResultado = new MathContext(common.precision, RoundingMode.HALF_UP);
+            var calc = new CalculadoraParcelasSemJuros(MC, mcResultado);
+            List<Parcela> parcelas = calc.calcularParcelas(principal, n);
             printParcelas(parcelas, common.format, common.output);
         }
     }
@@ -168,8 +170,9 @@ public class Main implements Runnable {
                 System.err.println("Erro: --output so e suportado com -f csv.");
                 return;
             }
-            var calc = new CalculadoraParcelasSac(MC);
-            List<Parcela> parcelas = calc.calcularParcelas(principal, parseRate(taxaStr), n, common.precision);
+            MathContext mcResultado = new MathContext(common.precision, RoundingMode.HALF_UP);
+            var calc = new CalculadoraParcelasSac(MC, mcResultado);
+            List<Parcela> parcelas = calc.calcularParcelas(principal, parseRate(taxaStr), n);
             printParcelas(parcelas, common.format, common.output);
         }
     }
@@ -192,8 +195,9 @@ public class Main implements Runnable {
                 System.err.println("Erro: --output so e suportado com -f csv.");
                 return;
             }
-            var calc = new CalculadoraParcelasPrice(MC);
-            List<Parcela> parcelas = calc.calcularParcelas(principal, parseRate(taxaStr), n, common.precision);
+            MathContext mcResultado = new MathContext(common.precision, RoundingMode.HALF_UP);
+            var calc = new CalculadoraParcelasPrice(MC, mcResultado);
+            List<Parcela> parcelas = calc.calcularParcelas(principal, parseRate(taxaStr), n);
             printParcelas(parcelas, common.format, common.output);
         }
     }
