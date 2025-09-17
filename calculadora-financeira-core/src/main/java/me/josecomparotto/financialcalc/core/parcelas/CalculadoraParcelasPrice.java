@@ -21,12 +21,18 @@ public class CalculadoraParcelasPrice implements ICalculadoraParcelas {
     @Override
     public List<Parcela> calcularParcelas(BigDecimal valorPrincipal, BigDecimal taxaJuros, Integer numeroParcelas,
             Integer precisao) {
+        
+        if (valorPrincipal == null) {
+            throw new IllegalArgumentException("Valor principal deve ser fornecido");
+        }
+        if( taxaJuros == null || taxaJuros.signum() <= 0) {
+            throw new IllegalArgumentException("Taxa de juros deve ser positiva e diferente de zero");
+        }
         if (numeroParcelas == null || numeroParcelas <= 0) {
             throw new IllegalArgumentException("Número de parcelas deve ser positivo e diferente de zero");
         }
-
-        if( taxaJuros == null || taxaJuros.signum() <= 0) {
-            throw new IllegalArgumentException("Taxa de juros deve ser positiva e diferente de zero");
+        if (precisao == null) {
+            throw new IllegalArgumentException("Precisão deve ser fornecida");
         }
 
         List<Parcela> parcelas = new ArrayList<>();

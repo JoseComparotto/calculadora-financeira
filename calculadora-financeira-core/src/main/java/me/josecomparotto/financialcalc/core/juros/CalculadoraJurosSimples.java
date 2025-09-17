@@ -17,10 +17,13 @@ public class CalculadoraJurosSimples implements ICalculadoraJuros<BigDecimal, Bi
 
     @Override
     public BigDecimal calcularJuros(BigDecimal principal, BigDecimal taxaJuros, Integer tempo) {
-        if (tempo != null && tempo < 0) {
+        if (principal == null || taxaJuros == null || tempo == null) {
+            throw new IllegalArgumentException("Todos os argumentos devem ser fornecidos");
+        }
+        if (tempo < 0) {
             throw new IllegalArgumentException("tempo não pode ser negativo em juros simples");
         }
-        if (taxaJuros != null && taxaJuros.signum() < 0) {
+        if (taxaJuros.signum() < 0) {
             throw new IllegalArgumentException("taxa de juros não pode ser negativa em juros simples");
         }
         return principal.multiply(taxaJuros).multiply(BigDecimal.valueOf(tempo));

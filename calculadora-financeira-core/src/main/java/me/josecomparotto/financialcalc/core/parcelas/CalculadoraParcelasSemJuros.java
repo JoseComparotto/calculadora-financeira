@@ -30,9 +30,17 @@ public class CalculadoraParcelasSemJuros implements ICalculadoraParcelas {
     }
 
     public List<Parcela> calcularParcelas(BigDecimal valorPrincipal, Integer numeroParcelas, Integer precisao) {
+        
+        if (valorPrincipal == null) {
+            throw new IllegalArgumentException("Valor principal deve ser fornecido");
+        }
         if (numeroParcelas == null || numeroParcelas <= 0) {
             throw new IllegalArgumentException("Número de parcelas deve ser positivo e diferente de zero");
         }
+        if (precisao == null) {
+            throw new IllegalArgumentException("Precisão deve ser fornecida");
+        }
+        
         BigDecimal valorParcela = valorPrincipal.divide(BigDecimal.valueOf(numeroParcelas), mc);
         List<Parcela> parcelas = new ArrayList<>();
         BigDecimal saldoDevedor = valorPrincipal;

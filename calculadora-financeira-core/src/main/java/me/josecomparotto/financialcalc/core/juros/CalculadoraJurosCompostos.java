@@ -17,10 +17,13 @@ public class CalculadoraJurosCompostos implements ICalculadoraJuros<BigDecimal, 
 
     @Override
     public BigDecimal calcularMontante(BigDecimal principal, BigDecimal taxaJuros, Integer tempo) {
-        if (tempo != null && tempo < 0) {
+        if (principal == null || taxaJuros == null || tempo == null) {
+            throw new IllegalArgumentException("Todos os argumentos devem ser fornecidos");
+        }
+        if (tempo < 0) {
             throw new IllegalArgumentException("tempo não pode ser negativo em juros compostos");
         }
-        if (taxaJuros != null && taxaJuros.signum() < 0) {
+        if (taxaJuros.signum() < 0) {
             throw new IllegalArgumentException("taxa de juros não pode ser negativa em juros compostos");
         }
         return principal.multiply(BigDecimal.ONE.add(taxaJuros).pow(tempo));

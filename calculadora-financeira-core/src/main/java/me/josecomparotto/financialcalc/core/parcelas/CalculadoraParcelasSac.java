@@ -22,9 +22,19 @@ public class CalculadoraParcelasSac implements ICalculadoraParcelas {
     public List<Parcela> calcularParcelas(BigDecimal valorPrincipal, BigDecimal taxaJuros, Integer numeroParcelas,
             Integer precisao) {
 
+        if (valorPrincipal == null) {
+            throw new IllegalArgumentException("Valor principal deve ser fornecido");
+        }
+        if (taxaJuros == null || taxaJuros.signum() < 0) {
+            throw new IllegalArgumentException("Taxa de juros deve ser fornecida e não pode ser negativa");
+        }
         if (numeroParcelas == null || numeroParcelas <= 0) {
             throw new IllegalArgumentException("Número de parcelas deve ser positivo e diferente de zero");
         }
+        if (precisao == null) {
+            throw new IllegalArgumentException("Precisão deve ser fornecida");
+        }
+
         BigDecimal valorAmortizacao = valorPrincipal.divide(BigDecimal.valueOf(numeroParcelas), mc);
         List<Parcela> parcelas = new ArrayList<>();
         BigDecimal saldoDevedor = valorPrincipal;
