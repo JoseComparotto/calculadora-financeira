@@ -7,6 +7,9 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <name>Calculadora Financeira Parent</name>
+    <description>Projeto multi-módulo para a biblioteca Calculadora Financeira</description>
+
     <modules>
         <module>calculadora-financeira-core</module>
         <module>calculadora-financeira-cli</module>
