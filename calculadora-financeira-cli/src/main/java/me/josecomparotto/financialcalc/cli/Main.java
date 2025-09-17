@@ -10,6 +10,11 @@ import me.josecomparotto.financialcalc.core.parcelas.CalculadoraParcelasPrice;
 import me.josecomparotto.financialcalc.core.parcelas.CalculadoraParcelasSac;
 import me.josecomparotto.financialcalc.core.parcelas.CalculadoraParcelasSemJuros;
 import me.josecomparotto.financialcalc.core.parcelas.Parcela;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -49,6 +54,27 @@ public class Main implements Runnable {
     static class CommonOptions {
         @Option(names = {"-p", "--precision"}, description = "Casas decimais (default: 2)")
         int precision = 2;
+
+        @Option(names = {"-f", "--format"}, description = "Formato de saida: csv ou humano (default: humano)", converter = FormatConverter.class)
+        Format format = Format.HUMAN;
+
+        @Option(names = {"-o", "--output"}, description = "Arquivo de saida (usar com -f csv)")
+        String output;
+    }
+
+    enum Format { HUMAN, CSV }
+
+    static class FormatConverter implements CommandLine.ITypeConverter<Format> {
+        public Format convert(String value) {
+            if (value == null) return Format.HUMAN;
+            String v = value.trim().toLowerCase();
+            if (v.isEmpty()) return Format.HUMAN;
+            return switch (v) {
+                case "csv" -> Format.CSV;
+                case "human", "humano", "formatado", "formatted", "humana", "formatada" -> Format.HUMAN;
+                default -> throw new CommandLine.TypeConversionException("Formato invalido: " + value + ". Use csv ou humano.");
+            };
+        }
     }
 
     @Command(name = "simples", description = "Juros simples: calcula montante e juros")
@@ -65,10 +91,15 @@ public class Main implements Runnable {
         int tempo;
 
         public void run() {
+            if (common.output != null && common.format != Format.CSV) {
+                System.err.println("Erro: --output so e suportado com -f csv.");
+                return;
+            }
             BigDecimal taxa = parseRate(taxaStr);
             var calc = new CalculadoraJurosSimples(MC);
-            System.out.println("Montante: " + calc.calcularMontante(principal, taxa, tempo));
-            System.out.println("Juros: " + calc.calcularJuros(principal, taxa, tempo));
+            BigDecimal montante = calc.calcularMontante(principal, taxa, tempo);
+            BigDecimal juros = calc.calcularJuros(principal, taxa, tempo);
+            printJuros("simples", common.format, common.output, principal, taxa, tempo, montante, juros);
         }
     }
 
@@ -86,10 +117,15 @@ public class Main implements Runnable {
         int tempo;
 
         public void run() {
+            if (common.output != null && common.format != Format.CSV) {
+                System.err.println("Erro: --output so e suportado com -f csv.");
+                return;
+            }
             BigDecimal taxa = parseRate(taxaStr);
             var calc = new CalculadoraJurosCompostos(MC);
-            System.out.println("Montante: " + calc.calcularMontante(principal, taxa, tempo));
-            System.out.println("Juros: " + calc.calcularJuros(principal, taxa, tempo));
+            BigDecimal montante = calc.calcularMontante(principal, taxa, tempo);
+            BigDecimal juros = calc.calcularJuros(principal, taxa, tempo);
+            printJuros("compostos", common.format, common.output, principal, taxa, tempo, montante, juros);
         }
     }
 
@@ -104,9 +140,13 @@ public class Main implements Runnable {
         int n;
 
         public void run() {
+            if (common.output != null && common.format != Format.CSV) {
+                System.err.println("Erro: --output so e suportado com -f csv.");
+                return;
+            }
             var calc = new CalculadoraParcelasSemJuros(MC);
             List<Parcela> parcelas = calc.calcularParcelas(principal, n, common.precision);
-            printParcelas(parcelas);
+            printParcelas(parcelas, common.format, common.output);
         }
     }
 
@@ -124,9 +164,13 @@ public class Main implements Runnable {
         int n;
 
         public void run() {
+            if (common.output != null && common.format != Format.CSV) {
+                System.err.println("Erro: --output so e suportado com -f csv.");
+                return;
+            }
             var calc = new CalculadoraParcelasSac(MC);
             List<Parcela> parcelas = calc.calcularParcelas(principal, parseRate(taxaStr), n, common.precision);
-            printParcelas(parcelas);
+            printParcelas(parcelas, common.format, common.output);
         }
     }
 
@@ -144,34 +188,109 @@ public class Main implements Runnable {
         int n;
 
         public void run() {
+            if (common.output != null && common.format != Format.CSV) {
+                System.err.println("Erro: --output so e suportado com -f csv.");
+                return;
+            }
             var calc = new CalculadoraParcelasPrice(MC);
             List<Parcela> parcelas = calc.calcularParcelas(principal, parseRate(taxaStr), n, common.precision);
-            printParcelas(parcelas);
+            printParcelas(parcelas, common.format, common.output);
         }
     }
 
-    private static void printParcelas(List<Parcela> parcelas) {
-        System.out.println(" # | Parcela  | Amortizacao | Juros   | Saldo");
+    private static void printParcelas(List<Parcela> parcelas, Format format, String outputFile) {
         BigDecimal totalParcela = BigDecimal.ZERO;
         BigDecimal totalAmort = BigDecimal.ZERO;
         BigDecimal totalJuros = BigDecimal.ZERO;
-        for (Parcela p : parcelas) {
-            System.out.printf("%2d | %8s | %11s | %7s | %s%n",
-                    p.getSerie(),
-                    p.getValorParcela(),
-                    p.getValorAmortizacao(),
-                    p.getValorJuros(),
-                    p.getSaldoDevedor());
-            totalParcela = totalParcela.add(p.getValorParcela());
-            totalAmort = totalAmort.add(p.getValorAmortizacao());
-            totalJuros = totalJuros.add(p.getValorJuros());
+        if (format == Format.CSV) {
+            if (outputFile != null && !outputFile.isBlank()) {
+                try {
+                    Path path = Path.of(outputFile);
+                    if (path.getParent() != null) Files.createDirectories(path.getParent());
+                    try (PrintWriter pw = new PrintWriter(Files.newBufferedWriter(path, StandardCharsets.UTF_8))) {
+                        pw.println("serie,parcela,amortizacao,juros,saldo");
+                        for (Parcela p : parcelas) {
+                            pw.printf("%d,%s,%s,%s,%s%n",
+                                    p.getSerie(),
+                                    p.getValorParcela(),
+                                    p.getValorAmortizacao(),
+                                    p.getValorJuros(),
+                                    p.getSaldoDevedor());
+                            totalParcela = totalParcela.add(p.getValorParcela());
+                            totalAmort = totalAmort.add(p.getValorAmortizacao());
+                            totalJuros = totalJuros.add(p.getValorJuros());
+                        }
+                        pw.printf("TOTAL,%s,%s,%s,%s%n",
+                                totalParcela,
+                                totalAmort,
+                                totalJuros,
+                                "");
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException("Falha ao escrever arquivo: " + e.getMessage(), e);
+                }
+            } else {
+                System.out.println("serie,parcela,amortizacao,juros,saldo");
+                for (Parcela p : parcelas) {
+                    System.out.printf("%d,%s,%s,%s,%s%n",
+                            p.getSerie(),
+                            p.getValorParcela(),
+                            p.getValorAmortizacao(),
+                            p.getValorJuros(),
+                            p.getSaldoDevedor());
+                    totalParcela = totalParcela.add(p.getValorParcela());
+                    totalAmort = totalAmort.add(p.getValorAmortizacao());
+                    totalJuros = totalJuros.add(p.getValorJuros());
+                }
+                System.out.printf("TOTAL,%s,%s,%s,%s%n",
+                        totalParcela,
+                        totalAmort,
+                        totalJuros,
+                        "");
+            }
+        } else {
+            System.out.println(" # | Parcela  | Amortizacao | Juros   | Saldo");
+            for (Parcela p : parcelas) {
+                System.out.printf("%2d | %8s | %11s | %7s | %s%n",
+                        p.getSerie(),
+                        p.getValorParcela(),
+                        p.getValorAmortizacao(),
+                        p.getValorJuros(),
+                        p.getSaldoDevedor());
+                totalParcela = totalParcela.add(p.getValorParcela());
+                totalAmort = totalAmort.add(p.getValorAmortizacao());
+                totalJuros = totalJuros.add(p.getValorJuros());
+            }
+            int scale = parcelas.isEmpty() ? 2 : parcelas.get(0).getValorParcela().scale();
+            System.out.println("Totais:");
+            System.out.println("  Parcelas: " + totalParcela.setScale(scale, java.math.RoundingMode.HALF_UP));
+            System.out.println("  Amortizacao: " + totalAmort.setScale(scale, java.math.RoundingMode.HALF_UP));
+            System.out.println("  Juros: " + totalJuros.setScale(scale, java.math.RoundingMode.HALF_UP));
+            System.out.println();
         }
-        int scale = parcelas.isEmpty() ? 2 : parcelas.get(0).getValorParcela().scale();
-        System.out.println("Totais:");
-        System.out.println("  Parcelas: " + totalParcela.setScale(scale, java.math.RoundingMode.HALF_UP));
-        System.out.println("  Amortizacao: " + totalAmort.setScale(scale, java.math.RoundingMode.HALF_UP));
-        System.out.println("  Juros: " + totalJuros.setScale(scale, java.math.RoundingMode.HALF_UP));
-        System.out.println();
+    }
+
+    private static void printJuros(String tipo, Format format, String outputFile, BigDecimal principal, BigDecimal taxa, int tempo, BigDecimal montante, BigDecimal juros) {
+        if (format == Format.CSV) {
+            if (outputFile != null && !outputFile.isBlank()) {
+                try {
+                    Path path = Path.of(outputFile);
+                    if (path.getParent() != null) Files.createDirectories(path.getParent());
+                    try (PrintWriter pw = new PrintWriter(Files.newBufferedWriter(path, StandardCharsets.UTF_8))) {
+                        pw.println("tipo,principal,taxa,tempo,montante,juros");
+                        pw.printf("%s,%s,%s,%d,%s,%s%n", tipo, principal, taxa, tempo, montante, juros);
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException("Falha ao escrever arquivo: " + e.getMessage(), e);
+                }
+            } else {
+                System.out.println("tipo,principal,taxa,tempo,montante,juros");
+                System.out.printf("%s,%s,%s,%d,%s,%s%n", tipo, principal, taxa, tempo, montante, juros);
+            }
+        } else {
+            System.out.println("Montante: " + montante);
+            System.out.println("Juros: " + juros);
+        }
     }
 
     private static BigDecimal parseRate(String s) {
