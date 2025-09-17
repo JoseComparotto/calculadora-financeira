@@ -10,4 +10,30 @@
         <module>calculadora-financeira-cli</module>
     </modules>
 
+    <profiles>
+        <profile>
+            <id>run-cli</id>
+            <dependencies>
+                <dependency>
+                    <groupId>me.josecomparotto.financialcalc</groupId>
+                    <artifactId>calculadora-financeira-cli</artifactId>
+                    <version>1.0-SNAPSHOT</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <defaultGoal>exec:java</defaultGoal>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.5.0</version>
+                        <configuration>
+                            <mainClass>me.josecomparotto.financialcalc.cli.Main</mainClass>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>
