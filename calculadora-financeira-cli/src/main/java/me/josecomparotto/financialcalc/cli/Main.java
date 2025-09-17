@@ -97,8 +97,8 @@ public class Main implements Runnable {
             }
             BigDecimal taxa = parseRate(taxaStr);
             var calc = new CalculadoraJurosSimples(MC);
-            BigDecimal montante = calc.calcularMontante(principal, taxa, tempo);
-            BigDecimal juros = calc.calcularJuros(principal, taxa, tempo);
+            BigDecimal montante = calc.calcularMontante(principal, taxa, tempo, common.precision);
+            BigDecimal juros = calc.calcularJuros(principal, taxa, tempo, common.precision);
             printJuros("simples", common.format, common.output, principal, taxa, tempo, montante, juros);
         }
     }
@@ -123,8 +123,8 @@ public class Main implements Runnable {
             }
             BigDecimal taxa = parseRate(taxaStr);
             var calc = new CalculadoraJurosCompostos(MC);
-            BigDecimal montante = calc.calcularMontante(principal, taxa, tempo);
-            BigDecimal juros = calc.calcularJuros(principal, taxa, tempo);
+            BigDecimal montante = calc.calcularMontante(principal, taxa, tempo, common.precision);
+            BigDecimal juros = calc.calcularJuros(principal, taxa, tempo, common.precision);
             printJuros("compostos", common.format, common.output, principal, taxa, tempo, montante, juros);
         }
     }

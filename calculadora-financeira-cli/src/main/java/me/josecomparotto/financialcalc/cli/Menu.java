@@ -115,9 +115,10 @@ public class Menu {
         BigDecimal principal = readBigDecimal(sc, "Principal");
         BigDecimal taxa = readPercentAsRate(sc, "Taxa em % (ex.: 10 para 10%)");
         int tempo = readInt(sc, "Tempo (periodos)");
+        int prec = readPrecision(sc);
         var calc = new CalculadoraJurosSimples(MC);
-        System.out.println("Montante: " + calc.calcularMontante(principal, taxa, tempo));
-        System.out.println("Juros: " + calc.calcularJuros(principal, taxa, tempo) + "\n");
+        System.out.println("Montante: " + calc.calcularMontante(principal, taxa, tempo, prec));
+        System.out.println("Juros: " + calc.calcularJuros(principal, taxa, tempo, prec) + "\n");
     }
 
     private void menuJurosCompostos(Scanner sc) {
@@ -125,9 +126,10 @@ public class Menu {
         BigDecimal principal = readBigDecimal(sc, "Principal");
         BigDecimal taxa = readPercentAsRate(sc, "Taxa em % (ex.: 10 para 10%)");
         int tempo = readInt(sc, "Tempo (periodos)");
+        int prec = readPrecision(sc);
         var calc = new CalculadoraJurosCompostos(MC);
-        System.out.println("Montante: " + calc.calcularMontante(principal, taxa, tempo));
-        System.out.println("Juros: " + calc.calcularJuros(principal, taxa, tempo) + "\n");
+        System.out.println("Montante: " + calc.calcularMontante(principal, taxa, tempo, prec));
+        System.out.println("Juros: " + calc.calcularJuros(principal, taxa, tempo, prec) + "\n");
     }
 
     private void menuParcelasSemJuros(Scanner sc) {

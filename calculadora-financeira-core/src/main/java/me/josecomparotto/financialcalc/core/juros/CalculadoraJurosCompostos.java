@@ -2,6 +2,7 @@ package me.josecomparotto.financialcalc.core.juros;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.math.RoundingMode;
 
 public class CalculadoraJurosCompostos implements ICalculadoraJuros<BigDecimal, BigDecimal, Integer> {
 
@@ -16,8 +17,8 @@ public class CalculadoraJurosCompostos implements ICalculadoraJuros<BigDecimal, 
     }
 
     @Override
-    public BigDecimal calcularMontante(BigDecimal principal, BigDecimal taxaJuros, Integer tempo) {
-        if (principal == null || taxaJuros == null || tempo == null) {
+    public BigDecimal calcularMontante(BigDecimal principal, BigDecimal taxaJuros, Integer tempo, Integer precisao) {
+        if (principal == null || taxaJuros == null || tempo == null || precisao == null) {
             throw new IllegalArgumentException("Todos os argumentos devem ser fornecidos");
         }
         if (tempo < 0) {
@@ -26,33 +27,18 @@ public class CalculadoraJurosCompostos implements ICalculadoraJuros<BigDecimal, 
         if (taxaJuros.signum() < 0) {
             throw new IllegalArgumentException("taxa de juros não pode ser negativa em juros compostos");
         }
-        return principal.multiply(BigDecimal.ONE.add(taxaJuros).pow(tempo));
+        return principal
+            .setScale(precisao, RoundingMode.HALF_UP)
+            .multiply(BigDecimal.ONE.add(taxaJuros, mc).pow(tempo, mc), mc)
+            .setScale(precisao, RoundingMode.HALF_UP);
     }
 
     @Override
-    public BigDecimal calcularJuros(BigDecimal principal, BigDecimal taxaJuros, Integer tempo) {
-        return calcularMontante(principal, taxaJuros, tempo).subtract(principal);
+    public BigDecimal calcularJuros(BigDecimal principal, BigDecimal taxaJuros, Integer tempo, Integer precisao) {
+        BigDecimal montante = calcularMontante(principal, taxaJuros, tempo, precisao);
+        return montante
+            .subtract(principal, mc)
+            .setScale(precisao, RoundingMode.HALF_UP);
     }
 
-    @Override
-    public BigDecimal calcularTaxaJuros(BigDecimal principal, BigDecimal montante, Integer tempo) {
-        if (tempo == null || tempo <= 0) {
-            throw new ArithmeticException("tempo deve ser positivo para taxa composta");
-        }
-        BigDecimal ratio = montante.divide(principal, mc);
-        double root = Math.pow(ratio.doubleValue(), 1.0 / tempo);
-        return BigDecimal.valueOf(root).subtract(BigDecimal.ONE);
-    }
-
-    @Override
-    public Integer calcularTempo(BigDecimal principal, BigDecimal montante, BigDecimal taxaJuros) {
-        double ratio = montante.divide(principal, mc).doubleValue();
-        double base = BigDecimal.ONE.add(taxaJuros).doubleValue();
-        return (int) Math.round(Math.log(ratio) / Math.log(base));
-    }
-
-    @Override
-    public BigDecimal calcularPrincipal(BigDecimal montante, BigDecimal taxaJuros, Integer tempo) {
-        return montante.divide(BigDecimal.ONE.add(taxaJuros).pow(tempo), mc);
-    }
 }
